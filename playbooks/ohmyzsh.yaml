@@ -1,0 +1,38 @@
+- name: Install OhMyZSH
+  hosts: hpcs
+
+  vars:
+    # Define the user by looking up the USER environment variable on the target host.
+    target_user: "{{ lookup('env', 'USER') }}"
+
+  tasks:
+    - name: Check if Oh My Zsh is already installed
+      ansible.builtin.stat:
+        path: "/p/home/{{ target_user }}/.oh-my-zsh"
+      register: oh_my_zsh_installed
+
+    - name: Install Oh My Zsh
+      ansible.builtin.shell:
+        cmd: 'sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended'
+        creates: "/p/home/{{ target_user }}/.oh-my-zsh"
+      when: not oh_my_zsh_installed.stat.exists
+
+    - name: Install ZSH Autocomplete
+      ansible.builtin.shell:
+        cmd: "git clone https://github.com/zsh-users/zsh-autosuggestions ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions"
+        creates: "/p/home/{{ target_user }}/.oh-my-zsh/custom/plugins/zsh-autosuggestions"
+
+    - name: Install p10k
+      ansible.builtin.shell:
+        cmd: "git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ~/.oh-my-zsh/custom/themes/powerlevel10k"
+        creates: "/p/home/{{ target_user }}/.oh-my-zsh/custom/themes/powerlevel10k"
+
+    - name: Copy custom .zshrc configuration
+      ansible.builtin.copy:
+        src: zshrc
+        dest: "/p/home/{{ target_user }}/.zshrc"
+
+    - name: Copy Powerlevel10k configuration
+      ansible.builtin.copy:
+        src: p10k.zsh
+        dest: "/p/home/{{ target_user }}/.p10k.zsh"
